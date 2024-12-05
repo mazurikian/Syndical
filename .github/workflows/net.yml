@@ -1,16 +1,15 @@
-name: Build .NET Solution
+name: Build and Upload Artifact on Release
 
 on:
+  release:
+    types: [created]  # Se ejecuta cuando se crea un release
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - '*'  # Se ejecuta cuando se hace push de un tag (se puede personalizar con un patrón específico)
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Puedes cambiarlo a 'windows-latest' o 'macos-latest' según tus necesidades.
+    runs-on: ubuntu-latest  # Cambiar si lo necesitas para windows o macos
 
     steps:
       # Paso 1: Checkout del código
