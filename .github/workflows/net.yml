@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Puedes cambiar esto por 'windows-latest' o 'macos-latest' según sea necesario.
+    runs-on: ubuntu-latest # Puedes cambiarlo a 'windows-latest' o 'macos-latest' según tus necesidades.
 
     steps:
       # Paso 1: Checkout del código
@@ -27,19 +27,17 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore Syndical.sln
 
-      # Paso 4: Compilar la solución
+      # Paso 4: Compilar el proyecto
       - name: Build the solution
-        run: dotnet build Syndical.sln --configuration Release
+        run: dotnet build Syndical.sln --configuration Release --output ./bin
 
       # Paso 5: Ejecutar pruebas (opcional)
       - name: Run tests
         run: dotnet test Syndical.sln --configuration Release
 
-      # Paso 6: Subir el artefacto de la compilación
-      - name: Upload build artifact
+      # Paso 6: Subir los artefactos de la compilación
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: syndical-build # Nombre del artefacto que aparecerá en GitHub
-          path: |
-            TheAirBlow.Syndical.Application/bin/Release/net6.0/*  # Cambia el camino dependiendo de tu estructura de salida
-            TheAirBlow.Syndical.Library/bin/Release/net6.0/*      # Aquí deberías incluir las salidas de todos los proyectos de la solución
+          name: build-artifacts
+          path: ./bin
