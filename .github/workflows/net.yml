@@ -1,0 +1,36 @@
+name: Build .NET Solution
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # Puede ser 'windows-latest' o 'macos-latest' dependiendo de tus necesidades.
+
+    steps:
+      # Paso 1: Checkout del código
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Paso 2: Configurar .NET SDK
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0'  # Cambia esta versión si usas una diferente.
+
+      # Paso 3: Restaurar dependencias
+      - name: Restore dependencies
+        run: dotnet restore Syndical.sln
+
+      # Paso 4: Compilar el proyecto
+      - name: Build the solution
+        run: dotnet build Syndical.sln --configuration Release
+
+      # Paso 5: Ejecutar pruebas (opcional, si tienes pruebas unitarias)
+      - name: Run tests
+        run: dotnet test Syndical.sln --configuration Release
