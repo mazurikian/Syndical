@@ -1,17 +1,66 @@
-name: Ejecutar comandos personalizados
+name: Build .NET Solution and Create Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      comando:
-        description: 'El comando que deseas ejecutar'
-        required: true
-        default: 'echo "Comando por defecto"'
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  ejecutar_comando:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest  # También puede ser 'windows-latest' o 'macos-latest' si prefieres otro sistema operativo.
 
     steps:
-      - name: Ejecutar el comando personalizado
-        run: ${{ github.event.inputs.comando }}
+      # Paso 1: Checkout del código
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Paso 2: Configurar .NET SDK
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0'  # Cambia esta versión si usas una diferente.
+
+      # Paso 3: Restaurar dependencias
+      - name: Restore dependencies
+        run: dotnet restore Syndical.sln
+
+      # Paso 4: Compilar el proyecto
+      - name: Build the solution
+        run: dotnet build Syndical.sln --configuration Release
+
+      # Paso 5: Ejecutar pruebas (opcional)
+      - name: Run tests
+        run: dotnet test Syndical.sln --configuration Release
+
+      # Paso 6: Publicar los artefactos de la compilación
+      - name: Publish build artifacts
+        run: dotnet publish Syndical.sln --configuration Release --output ./publish
+
+      # Paso 7: Crear un release en GitHub
+      - name: Create Release on GitHub
+        id: create_release
+        run: |
+          REPO_NAME=$(basename ${GITHUB_REPOSITORY})
+          VERSION="v$(date +'%Y%m%d%H%M%S')"  # Crea una versión con la fecha y hora actual.
+          RESPONSE=$(curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{"tag_name": "'$VERSION'", "name": "'$VERSION'", "body": "Release description", "draft": false, "prerelease": false}' \
+            https://api.github.com/repos/${GITHUB_REPOSITORY}/releases)
+          echo "::set-output name=release_id::$(echo $RESPONSE | jq -r .id)"
+
+      # Paso 8: Subir los artefactos de la compilación al release
+      - name: Upload build artifacts to GitHub Release
+        run: |
+          REPO_NAME=$(basename ${GITHUB_REPOSITORY})
+          RELEASE_ID=${{ steps.create_release.outputs.release_id }}
+          FILE_PATH="./publish"  # Directorio donde se encuentran los artefactos de la compilación.
+          
+          # Subir archivo comprimido de los artefactos
+          tar -czvf syndical-release.tar.gz -C ./publish .
+          
+          curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @syndical-release.tar.gz \
+            "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=syndical-release.tar.gz"
